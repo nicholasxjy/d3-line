@@ -59,11 +59,7 @@ export default class LineChart {
    */
 
   set(config) {
-    for (let k in defaults) {
-      this[k] = config[k] == null
-        ? defaults[k]
-        : config[k]
-    }
+    Object.assign(this, defaults, config)
   }
 
   /**
