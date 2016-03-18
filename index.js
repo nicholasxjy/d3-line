@@ -21,7 +21,7 @@ const defaults = {
   margin: { top: 15, right: 0, bottom: 35, left: 60 },
 
   // axis padding
-  axisPadding: 0,
+  axisPadding: 5,
 
   // axis tick size
   tickSize: 0,
