@@ -33,7 +33,7 @@ const defaults = {
   yTicks: 3,
 
   // nice round values for axis
-  nice: true,
+  nice: false,
 
   // line interpolation
   interpolate: 'basis'
