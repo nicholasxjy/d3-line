@@ -6,7 +6,7 @@
 ## Installation
 
 ```
-$ npm install tj/d3-line
+$ npm install d3-line
 ```
 
 ## Usage
