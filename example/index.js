@@ -40,6 +40,7 @@ class App extends Component {
 
   changeData = _ => {
     this.a.update(gen(24))
+    this.b.update(gen(8))
   }
 
   render() {

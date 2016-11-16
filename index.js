@@ -1,5 +1,5 @@
 
-import d3 from 'd3'
+import * as d3 from 'd3'
 
 // TODO: path gradients are a bitch
 
@@ -36,7 +36,7 @@ const defaults = {
   nice: false,
 
   // line interpolation
-  interpolate: 'basis'
+  interpolate: 'curveBasis'
 }
 
 /**
@@ -88,21 +88,19 @@ export default class LineChart {
       .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`)
 
-    this.x = d3.time.scale()
+    this.x = d3.scaleTime()
       .range([0, w])
 
-    this.y = d3.scale.linear()
+    this.y = d3.scaleLinear()
       .range([h, 0])
 
-    this.xAxis = d3.svg.axis()
-      .orient('bottom')
+    this.xAxis = d3.axisBottom()
       .scale(this.x)
       .ticks(xTicks)
       .tickPadding(8)
       .tickSize(tickSize)
 
-    this.yAxis = d3.svg.axis()
-      .orient('left')
+    this.yAxis = d3.axisLeft()
       .scale(this.y)
       .ticks(yTicks)
       .tickPadding(8)
@@ -118,10 +116,10 @@ export default class LineChart {
       .attr('transform', `translate(${-axisPadding}, 0)`)
       .call(this.yAxis)
 
-    this.line = d3.svg.line()
+    this.line = d3.line()
       .x(d => this.x(d.time))
       .y(d => this.y(d.value))
-      .interpolate(interpolate)
+      .curve(d3[interpolate])
 
     this.chart.append('path')
       .attr('class', 'line')

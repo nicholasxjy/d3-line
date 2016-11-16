@@ -10,9 +10,9 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _d2 = require('d3');
 
-var _d3 = _interopRequireDefault(_d2);
+var d3 = _interopRequireWildcard(_d2);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -51,7 +51,7 @@ var defaults = {
   nice: false,
 
   // line interpolation
-  interpolate: 'basis'
+  interpolate: 'curveBasis'
 };
 
 /**
@@ -78,9 +78,7 @@ var LineChart = function () {
   _createClass(LineChart, [{
     key: 'set',
     value: function set(config) {
-      for (var k in defaults) {
-        this[k] = config[k] == null ? defaults[k] : config[k];
-      }
+      Object.assign(this, defaults, config);
     }
 
     /**
@@ -90,9 +88,9 @@ var LineChart = function () {
   }, {
     key: 'dimensions',
     value: function dimensions() {
-      var width = this.width;
-      var height = this.height;
-      var margin = this.margin;
+      var width = this.width,
+          height = this.height,
+          margin = this.margin;
 
       var w = width - margin.left - margin.right;
       var h = height - margin.top - margin.bottom;
@@ -108,43 +106,40 @@ var LineChart = function () {
     value: function init() {
       var _this = this;
 
-      var target = this.target;
-      var width = this.width;
-      var height = this.height;
-      var margin = this.margin;
-      var axisPadding = this.axisPadding;
-      var interpolate = this.interpolate;
-      var tickSize = this.tickSize;
-      var xTicks = this.xTicks;
-      var yTicks = this.yTicks;
+      var target = this.target,
+          width = this.width,
+          height = this.height,
+          margin = this.margin,
+          axisPadding = this.axisPadding,
+          interpolate = this.interpolate;
+      var tickSize = this.tickSize,
+          xTicks = this.xTicks,
+          yTicks = this.yTicks;
 
-      var _dimensions = this.dimensions();
+      var _dimensions = this.dimensions(),
+          _dimensions2 = _slicedToArray(_dimensions, 2),
+          w = _dimensions2[0],
+          h = _dimensions2[1];
 
-      var _dimensions2 = _slicedToArray(_dimensions, 2);
+      this.chart = d3.select(target).attr('width', width).attr('height', height).append('g').attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
 
-      var w = _dimensions2[0];
-      var h = _dimensions2[1];
+      this.x = d3.scaleTime().range([0, w]);
 
+      this.y = d3.scaleLinear().range([h, 0]);
 
-      this.chart = _d3.default.select(target).attr('width', width).attr('height', height).append('g').attr('transform', 'translate(' + margin.left + ', ' + margin.top + ')');
+      this.xAxis = d3.axisBottom().scale(this.x).ticks(xTicks).tickPadding(8).tickSize(tickSize);
 
-      this.x = _d3.default.time.scale().range([0, w]);
-
-      this.y = _d3.default.scale.linear().range([h, 0]);
-
-      this.xAxis = _d3.default.svg.axis().orient('bottom').scale(this.x).ticks(xTicks).tickPadding(8).tickSize(tickSize);
-
-      this.yAxis = _d3.default.svg.axis().orient('left').scale(this.y).ticks(yTicks).tickPadding(8).tickSize(tickSize);
+      this.yAxis = d3.axisLeft().scale(this.y).ticks(yTicks).tickPadding(8).tickSize(tickSize);
 
       this.chart.append('g').attr('class', 'x axis').attr('transform', 'translate(0, ' + (h + axisPadding) + ')').call(this.xAxis);
 
       this.chart.append('g').attr('class', 'y axis').attr('transform', 'translate(' + -axisPadding + ', 0)').call(this.yAxis);
 
-      this.line = _d3.default.svg.line().x(function (d) {
+      this.line = d3.line().x(function (d) {
         return _this.x(d.time);
       }).y(function (d) {
         return _this.y(d.value);
-      }).interpolate(interpolate);
+      }).curve(d3[interpolate]);
 
       this.chart.append('path').attr('class', 'line');
     }
@@ -156,18 +151,18 @@ var LineChart = function () {
   }, {
     key: 'renderAxis',
     value: function renderAxis(data, options) {
-      var chart = this.chart;
-      var x = this.x;
-      var y = this.y;
-      var xAxis = this.xAxis;
-      var yAxis = this.yAxis;
-      var nice = this.nice;
+      var chart = this.chart,
+          x = this.x,
+          y = this.y,
+          xAxis = this.xAxis,
+          yAxis = this.yAxis,
+          nice = this.nice;
 
 
-      var xd = x.domain(_d3.default.extent(data, function (d) {
+      var xd = x.domain(d3.extent(data, function (d) {
         return d.time;
       }));
-      var yd = y.domain(_d3.default.extent(data, function (d) {
+      var yd = y.domain(d3.extent(data, function (d) {
         return d.value;
       }));
 
@@ -189,17 +184,14 @@ var LineChart = function () {
   }, {
     key: 'renderCols',
     value: function renderCols(data) {
-      var chart = this.chart;
-      var x = this.x;
-      var y = this.y;
+      var chart = this.chart,
+          x = this.x,
+          y = this.y;
 
-      var _dimensions3 = this.dimensions();
-
-      var _dimensions4 = _slicedToArray(_dimensions3, 2);
-
-      var w = _dimensions4[0];
-      var h = _dimensions4[1];
-
+      var _dimensions3 = this.dimensions(),
+          _dimensions4 = _slicedToArray(_dimensions3, 2),
+          w = _dimensions4[0],
+          h = _dimensions4[1];
 
       var column = chart.selectAll('.column').data(data);
 
@@ -241,7 +233,7 @@ var LineChart = function () {
   }, {
     key: 'render',
     value: function render(data) {
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
       this.renderAxis(data, options);
       this.renderCols(data, options);
