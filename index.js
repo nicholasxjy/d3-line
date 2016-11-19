@@ -36,7 +36,10 @@ const defaults = {
   nice: false,
 
   // line interpolation
-  interpolate: 'curveBasis'
+  interpolate: 'curveBasis',
+
+  // grid
+  grid: false
 }
 
 /**
@@ -88,20 +91,20 @@ export default class LineChart {
       .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`)
 
-    this.x = d3.scaleTime()
+    this.xScale = d3.scaleTime()
       .range([0, w])
 
-    this.y = d3.scaleLinear()
+    this.yScale = d3.scaleLinear()
       .range([h, 0])
 
     this.xAxis = d3.axisBottom()
-      .scale(this.x)
+      .scale(this.xScale)
       .ticks(xTicks)
       .tickPadding(8)
       .tickSize(tickSize)
 
     this.yAxis = d3.axisLeft()
-      .scale(this.y)
+      .scale(this.yScale)
       .ticks(yTicks)
       .tickPadding(8)
       .tickSize(tickSize)
@@ -117,8 +120,8 @@ export default class LineChart {
       .call(this.yAxis)
 
     this.line = d3.line()
-      .x(d => this.x(d.time))
-      .y(d => this.y(d.value))
+      .x(d => this.xScale(d.time))
+      .y(d => this.yScale(d.value))
       .curve(d3[interpolate])
 
     this.chart.append('path')
@@ -130,10 +133,10 @@ export default class LineChart {
    */
 
   renderAxis(data, options) {
-    const { chart, x, y, xAxis, yAxis, nice } = this
+    const { chart, xScale, yScale, xAxis, yAxis, nice } = this
 
-    const xd = x.domain(d3.extent(data, d => d.time))
-    const yd = y.domain(d3.extent(data, d => d.value))
+    const xd = xScale.domain(d3.extent(data, d => d.time))
+    const yd = yScale.domain(d3.extent(data, d => d.value))
 
     if (nice) {
       xd.nice()
@@ -149,63 +152,87 @@ export default class LineChart {
   }
 
   /**
-   * Render columns.
+   * Render Grid
    */
 
-  renderCols(data) {
-    const { chart, x, y } = this
+   renderGrid(data) {
+    const { chart, xAxis, yAxis } = this
     const [w, h] = this.dimensions()
 
-    const column = chart.selectAll('.column')
-      .data(data)
+    chart.append('g')
+      .attr('class', 'grid')
+      .attr('transform', `translate(0, ${h})`)
+      .call(xAxis.tickSize(-h, 0, 0).tickFormat(''))
 
-    // enter
-    column.enter().append('rect')
-      .attr('class', 'column')
+    chart.append('g')
+      .attr('class', 'grid')
+      .call(yAxis.tickSize(-w, 0, 0).tickFormat(''))
 
-    // update
-    column.attr('width', 1)
-      .attr('height', d => h)
-      .attr('x', d => x(d.time))
-      .attr('y', 0)
-
-    // exit
-    column.exit()
-      .remove()
   }
 
   /**
    * Render line.
    */
 
-  renderLine(data) {
-    const chart = this.chart.transition()
-    const { line } = this
+   renderLine(data, options) {
+     const { interpolate, chart } = this
+     const tchart = chart.transition()
+     const prefix = options.prefix || 'chart'
+     let line = d3.line()
+       .x(d => this.xScale(d.time))
+       .y(d => this.yScale(d.value))
+       .curve(d3[interpolate])
 
-    chart.select('.line')
-      .attr('d', line(data))
+     chart.append('path')
+       .attr('class', `line line-${prefix}`)
 
-    // hack: fixes order
-    chart.node().appendChild(chart.select('.line').node())
-  }
+     tchart.select(`.line-${prefix}`)
+       .attr('d', line(data))
 
+     // hack: fixes order
+     tchart.node().appendChild(tchart.select(`.line-${prefix}`).node())
+   }
   /**
    * Render the chart against the given `data`.
    */
 
-  render(data, options = {}) {
-    this.renderAxis(data, options)
-    this.renderCols(data, options)
-    this.renderLine(data, options)
-  }
+   render(data, options = {}) {
+     this.renderAxis(data, options)
+     if (this.grid) {
+       this.renderGrid(data)
+     }
+     this.renderLine(data, options)
+   }
 
+   /**
+    * Render mutiple lines
+    */
+    renderMultiLines(data, options={}) {
+      this.renderAxis(data, options)
+      if (this.grid) {
+        this.renderGrid(data)
+      }
+      const nestData = d3.nest()
+        .key(d => d.symbol)
+        .entries(data)
+
+      nestData.forEach(d => {
+        this.renderLine(d.values, {prefix: d.key})
+      })
+    }
   /**
    * Update the chart against the given `data`.
    */
 
-  update(data) {
-    this.render(data, {
-      animate: true
-    })
-  }
+   update(data) {
+     this.render(data, {
+       animate: true
+     })
+   }
+
+   updateMulti(data) {
+     this.renderMultiLines(data, {
+       animate: true
+     })
+   }
 }
